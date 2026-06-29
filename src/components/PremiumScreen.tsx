@@ -216,17 +216,38 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
               try {
                 setCheckoutMode(true);
                 
-                // Directly open the Payment Link with the user ID attached!
-                const paymentLink = `https://buy.stripe.com/6oU8wP77p5xl9xEa9McAo01?client_reference_id=${userId}`;
-                setCheckoutUrl(paymentLink);
+                // Use the Official Firebase Stripe Extension flow
+                const sessionsRef = collection(db, 'customers', userId, 'checkout_sessions');
+                const isDesktop = window.location.href.startsWith('file:');
+                const returnUrl = isDesktop ? 'https://stripe.com' : window.location.href;
                 
-                // Bulletproof way to open external links in Electron:
-                const a = document.createElement('a');
-                a.href = paymentLink;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const docRef = await addDoc(sessionsRef, {
+                  price: 'price_1Tn4n2GLmj8jijcFFls55hsZ', // LIVE PRICE ID
+                  success_url: returnUrl,
+                  cancel_url: returnUrl,
+                  mode: 'payment',
+                });
+                
+                // Wait for the Stripe Extension to attach a URL
+                onSnapshot(docRef, (snap) => {
+                  const data = snap.data();
+                  if (data) {
+                    const { error, url } = data;
+                    if (error) {
+                      alert(`An error occurred: ${error.message}`);
+                    }
+                    if (url) {
+                      setCheckoutUrl(url);
+                      // Bulletproof way to open external links in Electron:
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.target = '_blank';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }
+                  }
+                });
 
               } catch (error: any) {
                 console.error("Failed to start checkout:", error);
