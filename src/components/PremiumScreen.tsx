@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, collection, addDoc, onSnapshot, setDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, addDoc, onSnapshot, setDoc, getDocs, getDoc } from 'firebase/firestore';
 import { RefreshCw, Check } from 'lucide-react';
 
 interface PremiumScreenProps {
@@ -54,12 +54,21 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
           }
         });
       });
+      // Listen to custom webhook updates in users collection!
+      const userRef = doc(db, 'users', userId);
+      const unsubUser = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().isPremium === true) {
+          onPlanSelected(true);
+        }
+      });
+
       return () => {
         unsub();
         unsubPayments();
+        unsubUser();
       };
     }
-  }, [checkoutMode, userId, onPlanSelected]);
+  }, [userId, checkoutMode, onPlanSelected]);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +115,13 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
                 paySnap.forEach(docSnap => {
                   if (docSnap.data().status === 'succeeded') isPro = true;
                 });
+                
+                // Check custom users document where the webhook writes!
+                const userRef = doc(db, 'users', userId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists() && userSnap.data().isPremium === true) {
+                  isPro = true;
+                }
 
                 if (isPro) {
                   onPlanSelected(true);
