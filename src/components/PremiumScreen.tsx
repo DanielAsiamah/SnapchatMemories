@@ -199,36 +199,17 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
               }
               try {
                 setCheckoutMode(true);
-                const sessionsRef = collection(db, 'customers', userId, 'checkout_sessions');
-                const isDesktop = window.location.href.startsWith('file:');
-                const returnUrl = isDesktop ? 'https://stripe.com' : window.location.href;
                 
-                const docRef = await addDoc(sessionsRef, {
-                  price: 'price_1Tn4n2GLmj8jijcFFls55hsZ',
-                  success_url: returnUrl,
-                  cancel_url: returnUrl,
-                  mode: 'payment',
-                });
+                // Directly open the Payment Link with the user ID attached!
+                const paymentLink = `https://buy.stripe.com/6oU8wP77p5xl9xEa9McAo01?client_reference_id=${userId}`;
+                setCheckoutUrl(paymentLink);
                 
-                // Wait for the Stripe Extension to attach a URL
-                onSnapshot(docRef, (snap) => {
-                  const data = snap.data();
-                  if (data) {
-                    const { error, url } = data;
-                    if (error) {
-                      alert(`An error occurred: ${error.message}`);
-                    }
-                    if (url) {
-                      setCheckoutUrl(url);
-                      if ((window as any).require) {
-                        const { shell } = (window as any).require('electron');
-                        shell.openExternal(url);
-                      } else {
-                        window.open(url, '_blank');
-                      }
-                    }
-                  }
-                });
+                if ((window as any).require) {
+                  const { shell } = (window as any).require('electron');
+                  shell.openExternal(paymentLink);
+                } else {
+                  window.open(paymentLink, '_blank');
+                }
 
               } catch (error: any) {
                 console.error("Failed to start checkout:", error);
