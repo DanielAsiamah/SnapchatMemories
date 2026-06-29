@@ -129,12 +129,12 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
             <button 
               onClick={(e) => {
                 e.preventDefault();
-                if ((window as any).require) {
-                  const { shell } = (window as any).require('electron');
-                  shell.openExternal(checkoutUrl);
-                } else {
-                  window.open(checkoutUrl, '_blank');
-                }
+                const a = document.createElement('a');
+                a.href = checkoutUrl;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
               }} 
               className="tb-text-link-btn" 
               style={{ marginTop: '15px' }}
@@ -204,12 +204,13 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
                 const paymentLink = `https://buy.stripe.com/6oU8wP77p5xl9xEa9McAo01?client_reference_id=${userId}`;
                 setCheckoutUrl(paymentLink);
                 
-                if ((window as any).require) {
-                  const { shell } = (window as any).require('electron');
-                  shell.openExternal(paymentLink);
-                } else {
-                  window.open(paymentLink, '_blank');
-                }
+                // Bulletproof way to open external links in Electron:
+                const a = document.createElement('a');
+                a.href = paymentLink;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
 
               } catch (error: any) {
                 console.error("Failed to start checkout:", error);
