@@ -1,0 +1,20 @@
+{
+  "name": "snapvault-functions",
+  "description": "Custom Firebase Functions for SnapVault Webhooks",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.1",
+    "stripe": "^15.11.0"
+  },
+  "private": true
+}

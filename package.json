@@ -1,0 +1,64 @@
+{
+  "name": "snapvault",
+  "version": "1.0.0",
+  "description": "Save and organise your Snapchat memories",
+  "author": "SnapVault",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.snapvault.app",
+    "productName": "SnapVault",
+    "directories": {
+      "output": "C:/Users/china/SnapVaultBuilds3"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/snapchat-logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SnapVault"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/snapchat-logo.png"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.3",
+    "firebase": "^11.10.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.523.0",
+    "piexifjs": "^1.0.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "concurrently": "^9.1.2",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "wait-on": "^8.0.3"
+  }
+}
