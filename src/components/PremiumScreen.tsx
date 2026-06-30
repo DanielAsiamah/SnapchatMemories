@@ -222,7 +222,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
                 const returnUrl = isDesktop ? 'https://stripe.com' : window.location.href;
                 
                 const docRef = await addDoc(sessionsRef, {
-                  price: 'price_1Tn4n2GLmj8jijcFFls55hsZ', // LIVE PRICE ID
+                  price: import.meta.env.VITE_STRIPE_PRICE_ID,
                   success_url: returnUrl,
                   cancel_url: returnUrl,
                   mode: 'payment',

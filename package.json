@@ -15,7 +15,7 @@
     "appId": "com.snapvault.app",
     "productName": "SnapVault",
     "directories": {
-      "output": "C:/Users/china/SnapVaultBuilds7"
+      "output": "C:/Users/china/SnapVaultBuilds8"
     },
     "files": [
       "dist/**/*",
