@@ -17,6 +17,22 @@ interface ExportScreenProps {
   onUpgradeClick?: () => void;
 }
 
+const getDynamicDocumentsPath = () => {
+  const fallbackPath = 'C:\\Users\\china\\Documents\\SnapVault\\Memories';
+  try {
+    const href = window.location.href;
+    if (href.startsWith('file:///')) {
+      const match = href.match(/file:\/\/\/[a-zA-Z]:\/[uU]sers\/([^\/]+)/);
+      if (match && match[1]) {
+        return `C:\\Users\\${match[1]}\\Documents\\SnapVault\\Memories`;
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  return fallbackPath;
+};
+
 export const ExportScreen: React.FC<ExportScreenProps> = ({
   userId,
   photos,
@@ -32,11 +48,18 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('Initializing files...');
   const [currentThumb, setCurrentThumb] = useState<string | null>(null);
-  const [exportFolder, setExportFolder] = useState('C:\\Users\\Daniel\\Documents\\SnapVault\\Memories');
+  const [exportFolder, setExportFolder] = useState(getDynamicDocumentsPath());
   const [errorMsg, setErrorMsg] = useState('');
   const [skippedCount, setSkippedCount] = useState(0);
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [processedPreviews, setProcessedPreviews] = useState<{ index: number; status: 'success' | 'failed'; reason?: string; thumbUrl?: string; type: string }[]>([]);
+  
+  const [successCount, setSuccessCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  const [err403Count, setErr403Count] = useState(0);
+  const [errNetworkCount, setErrNetworkCount] = useState(0);
+  const [errMissingCount, setErrMissingCount] = useState(0);
+  const [errOtherCount, setErrOtherCount] = useState(0);
   
   const allItems = [...photos, ...videos, ...stories];
   const limitCount = isPremium ? allItems.length : Math.min(allItems.length, 50);
@@ -56,6 +79,12 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     setSkippedCount(0);
     setDownloadedCount(0);
     setProcessedPreviews([]);
+    setSuccessCount(0);
+    setFailedCount(0);
+    setErr403Count(0);
+    setErrNetworkCount(0);
+    setErrMissingCount(0);
+    setErrOtherCount(0);
 
     const injectExif = async (blob: Blob, dateObj: Date): Promise<string> => {
       return new Promise((resolve) => {
@@ -197,7 +226,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                 console.warn(`Cloud download failed with status: ${response.status}`);
                 if (response.status === 403) {
                   http403Count++;
-                  itemError = 'expired link';
+                  itemError = '403 expired';
                 } else {
                   otherHttpErrorCount++;
                   itemError = `HTTP error ${response.status}`;
@@ -206,7 +235,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
             } catch (err) {
               console.warn("Failed to download from URL:", err);
               networkErrorCount++;
-              itemError = 'network error';
+              itemError = 'network/CORS';
             }
           } else {
             missingLinkCount++;
@@ -265,6 +294,18 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       } catch (fErr) {
         console.error(fErr);
       }
+
+      // Calculate and set final stats states
+      const finalSuccess = Object.keys(outputZip.files).length;
+      const finalFailed = itemsToExport.length - finalSuccess;
+      const finalOther = finalFailed - http403Count - networkErrorCount - missingLinkCount;
+
+      setSuccessCount(finalSuccess);
+      setFailedCount(finalFailed);
+      setErr403Count(http403Count);
+      setErrNetworkCount(networkErrorCount);
+      setErrMissingCount(missingLinkCount);
+      setErrOtherCount(Math.max(0, finalOther));
 
       setExportState('complete');
       triggerConfetti();
@@ -478,12 +519,50 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
               <h3>Export Complete!</h3>
               <p className="success-details-sub">Your memories have been saved successfully.</p>
               
-              {skippedCount > 0 && (
-                <div style={{ backgroundColor: '#fffbe6', border: '1px solid #ffe58f', padding: '12px', borderRadius: '6px', fontSize: '12.5px', color: '#d48806', textAlign: 'left', maxWidth: '400px', margin: '0 auto 16px auto' }}>
-                  <strong>⚠ {skippedCount} memories skipped</strong>
-                  <p style={{ marginTop: '4px', lineHeight: '1.4' }}>These items could not be downloaded because their Snapchat cloud links have expired. Please request a fresh data export from Snapchat to retrieve them.</p>
+              <div className="export-stats-summary" style={{
+                backgroundColor: '#f9f9f9',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '16px',
+                width: '100%',
+                maxWidth: '400px',
+                margin: '16px auto',
+                fontSize: '13px',
+                textAlign: 'left'
+              }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: 'var(--text-main)' }}>Export Stats</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontWeight: '600' }}>
+                  <span>Successful downloads:</span>
+                  <span style={{ color: 'var(--accent-green)' }}>{successCount}</span>
                 </div>
-              )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontWeight: '600' }}>
+                  <span>Failed/Skipped:</span>
+                  <span style={{ color: '#991b1b' }}>{failedCount}</span>
+                </div>
+                
+                {failedCount > 0 && (
+                  <div style={{ paddingLeft: '12px', borderLeft: '2px solid #fca5a5', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: '#666' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>• 403 expired links:</span>
+                      <span>{err403Count}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>• Network/CORS blocks:</span>
+                      <span>{errNetworkCount}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>• Missing download links:</span>
+                      <span>{errMissingCount}</span>
+                    </div>
+                    {errOtherCount > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>• Other errors:</span>
+                        <span>{errOtherCount}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <div className="location-complete-card">
                 <span>Location:</span>

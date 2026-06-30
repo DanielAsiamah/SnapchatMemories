@@ -25,7 +25,6 @@ export const Scanner: React.FC<ScannerProps> = ({
   const [totalProgress, setTotalProgress] = useState(0);
   const [fileProgress, setFileProgress] = useState(0);
   const [currentFile, setCurrentFile] = useState('Initializing extraction...');
-  const [currentThumb, setCurrentThumb] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [remainingTime, setRemainingTime] = useState('Estimating...');
   const [speed, setSpeed] = useState('0.0 MB/s');
@@ -68,10 +67,8 @@ export const Scanner: React.FC<ScannerProps> = ({
             const formattedDate = dateStr.replace(/ UTC$/, '').replace(/:/g, '-');
             const ext = mediaType.toUpperCase().includes('VIDEO') ? 'mp4' : 'jpg';
             setCurrentFile(`IMG_${formattedDate.replace(/ /g, '_')}.${ext}`);
-            setCurrentThumb(`https://picsum.photos/seed/${new Date(dateStr).getTime() + fileIdx}/200/200`);
           } else {
             setCurrentFile(`extracting_metadata_${fileIdx + 1}.json`);
-            setCurrentThumb(`https://picsum.photos/seed/${fileIdx}/200/200`);
           }
         }
         return nextFileProg;
@@ -211,12 +208,11 @@ export const Scanner: React.FC<ScannerProps> = ({
               </div>
             </div>
 
-            {currentThumb && (
-              <div className="scanner-thumbnail-box">
-                <img src={currentThumb} alt="Scanning" />
-                <div className="scanner-scanline"></div>
-              </div>
-            )}
+            <div className="scanner-thumbnail-box" style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#fafafa', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '32px' }}>🔍</span>
+              <span style={{ fontSize: '10px', marginTop: '8px', color: '#666', fontWeight: 600 }}>SCANNING...</span>
+              <div className="scanner-scanline"></div>
+            </div>
           </div>
 
         </div>

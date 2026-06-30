@@ -46,9 +46,6 @@ export const ResultsPreview: React.FC<ResultsPreviewProps> = ({
   const displayedItems = allItems.slice(0, 12);
 
   const getImageSource = (item: any) => {
-    if (item.calculatedType === 'VIDEO') {
-      return 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=150&auto=format&fit=crop';
-    }
     return item["Download Link"] || item["Media Download Url"] || '';
   };
 

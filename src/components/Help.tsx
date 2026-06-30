@@ -50,10 +50,6 @@ export const Help: React.FC<HelpProps> = ({ onClose }) => {
           {/* Video Tutorial Card */}
           <div className="video-card">
             <div className="video-thumbnail">
-              <img 
-                src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&auto=format&fit=crop&q=60" 
-                alt="Video thumbnail" 
-              />
               <div className="video-overlay">
                 <div className="play-button-ring">
                   <Play size={24} className="play-icon" />
@@ -192,13 +188,7 @@ export const Help: React.FC<HelpProps> = ({ onClose }) => {
           height: 120px;
           position: relative;
           cursor: pointer;
-        }
-
-        .video-thumbnail img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          opacity: 0.6;
+          background: linear-gradient(135deg, #1e1e1e 0%, #2e2e2e 100%);
         }
 
         .video-overlay {
