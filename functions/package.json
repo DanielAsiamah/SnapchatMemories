@@ -2,7 +2,7 @@
   "name": "snapvault-functions",
   "description": "Custom Firebase Functions for SnapVault Webhooks",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {

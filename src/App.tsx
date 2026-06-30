@@ -58,7 +58,35 @@ function App() {
           handledSuccess = true;
         }
 
-        // Listen to Firestore Stripe Extension subscriptions & one-time payments
+        let stripeExtensionPro = false;
+        let webhookPro = false;
+
+        const checkAndApplyPro = (hasPremium: boolean) => {
+          console.log(`[Auth Guard] isPro calculated as: ${hasPremium}`);
+          setIsPro(hasPremium);
+          setIsPremium(hasPremium);
+          setCheckingSubscription(false);
+          setLoadingAuth(false);
+          
+          if (!handledSuccess) {
+            setScreen(prev => {
+              console.log(`[Auth Guard] Current route: ${prev}. User is logged in.`);
+              if (prev === 'auth' || prev === 'premium' || prev === 'payment') {
+                return hasPremium ? 'import' : 'premium';
+              }
+              return prev;
+            });
+          }
+        };
+
+        // 1. Listen to users/{userId} for custom webhook updates
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribeUser = onSnapshot(userRef, (userSnap) => {
+          webhookPro = userSnap.exists() && userSnap.data()?.isPremium === true;
+          checkAndApplyPro(stripeExtensionPro || webhookPro);
+        });
+
+        // 2. Listen to Firestore Stripe Extension subscriptions & one-time payments
         const subsRef = collection(db, 'customers', user.uid, 'subscriptions');
         const unsubscribeSub = onSnapshot(subsRef, (snap) => {
           let hasPremium = false;
@@ -74,46 +102,23 @@ function App() {
              // Fallback check for one-time payments
              const payRef = collection(db, 'customers', user.uid, 'payments');
              getDocs(payRef).then(paySnap => {
+               let hasPay = false;
                paySnap.forEach(docSnap => {
-                 if (docSnap.data().status === 'succeeded') hasPremium = true;
+                 if (docSnap.data().status === 'succeeded') hasPay = true;
                });
-               
-               console.log(`[Auth Guard] isPro calculated as: ${hasPremium}`);
-               setIsPro(hasPremium);
-               setIsPremium(hasPremium);
-               setCheckingSubscription(false);
-               setLoadingAuth(false);
-               
-               if (!handledSuccess) {
-                 setScreen(prev => {
-                   console.log(`[Auth Guard] Current route: ${prev}. User is logged in.`);
-                   if (prev === 'auth' || prev === 'premium' || prev === 'payment') {
-                     return hasPremium ? 'import' : 'payment';
-                   }
-                   return prev;
-                 });
-               }
+               stripeExtensionPro = hasPay;
+               checkAndApplyPro(stripeExtensionPro || webhookPro);
              });
           } else {
-            console.log(`[Auth Guard] isPro calculated as: ${hasPremium}`);
-            setIsPro(hasPremium);
-            setIsPremium(hasPremium);
-            setCheckingSubscription(false);
-            setLoadingAuth(false);
-            
-            if (!handledSuccess) {
-              setScreen(prev => {
-                console.log(`[Auth Guard] Current route: ${prev}. User is logged in.`);
-                if (prev === 'auth' || prev === 'premium' || prev === 'payment') {
-                  return hasPremium ? 'import' : 'payment';
-                }
-                return prev;
-              });
-            }
+            stripeExtensionPro = true;
+            checkAndApplyPro(stripeExtensionPro || webhookPro);
           }
         });
 
-        return () => unsubscribeSub();
+        return () => {
+          unsubscribeUser();
+          unsubscribeSub();
+        };
       } else {
         console.log("[Auth Guard] No verified user found. Resetting state.");
         setUserId('');
@@ -247,7 +252,7 @@ function App() {
             onAuthenticated={handleAuthenticated} 
             onGuestContinue={handleGuestContinue}
             onSignInClick={() => setAuthStep('login')}
-            onProCheckout={() => setScreen('payment')}
+            onProCheckout={() => setScreen('premium')}
             initialStep={authStep}
             isLoggedIn={isLoggedIn}
             isPro={isPro}

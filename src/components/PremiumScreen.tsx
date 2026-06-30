@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, collection, addDoc, onSnapshot, setDoc, getDocs, getDoc } from 'firebase/firestore';
+import { doc, collection, addDoc, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { RefreshCw, Check } from 'lucide-react';
 
 interface PremiumScreenProps {
@@ -229,12 +229,37 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
                 });
                 
                 // Wait for the Stripe Extension to attach a URL
-                onSnapshot(docRef, (snap) => {
+                const unsubSession = onSnapshot(docRef, async (snap) => {
                   const data = snap.data();
                   if (data) {
                     const { error, url } = data;
                     if (error) {
-                      alert(`An error occurred: ${error.message}`);
+                      console.error("Checkout session error:", error.message);
+                      if (error.message && error.message.includes("No such customer")) {
+                        console.log("Stale customer record detected. Cleaning up and retrying...");
+                        unsubSession();
+                        try {
+                          // Clear the Stripe extension customer document
+                          await deleteDoc(doc(db, 'customers', userId));
+                          // Clear any potentially stale Stripe customer ID fields in users document
+                          const userRef = doc(db, 'users', userId);
+                          await updateDoc(userRef, {
+                            stripeCustomerId: deleteField(),
+                            customerId: deleteField(),
+                            customer: deleteField()
+                          }).catch(() => {});
+                          
+                          alert("A stale payment record was detected and cleared. Please try clicking 'Unlock Pro' again.");
+                          setCheckoutMode(false);
+                        } catch (err: any) {
+                          console.error("Failed to clean up stale customer record:", err);
+                          alert(`Checkout failed: ${error.message}`);
+                          setCheckoutMode(false);
+                        }
+                      } else {
+                        alert(`An error occurred: ${error.message}`);
+                        setCheckoutMode(false);
+                      }
                     }
                     if (url) {
                       setCheckoutUrl(url);
@@ -245,6 +270,7 @@ export const PremiumScreen: React.FC<PremiumScreenProps> = ({
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
+                      unsubSession();
                     }
                   }
                 });
