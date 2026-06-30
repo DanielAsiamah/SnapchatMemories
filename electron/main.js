@@ -11,7 +11,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      enableRemoteModule: false
+      enableRemoteModule: false,
+      webSecurity: false
     },
     icon: path.join(__dirname, '../public/snapchat-logo.png')
   });
