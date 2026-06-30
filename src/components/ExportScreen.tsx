@@ -81,6 +81,11 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       const outputZip = new JSZip();
       const itemsToExport = allItems.slice(0, limitCount);
       
+      let http403Count = 0;
+      let networkErrorCount = 0;
+      let otherHttpErrorCount = 0;
+      let missingLinkCount = 0;
+
       setStatusText("Reading export records...");
       await new Promise(r => setTimeout(r, 600));
 
@@ -158,10 +163,18 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                 fileProcessed = true;
               } else {
                 console.warn(`Cloud download failed with status: ${response.status}`);
+                if (response.status === 403) {
+                  http403Count++;
+                } else {
+                  otherHttpErrorCount++;
+                }
               }
             } catch (err) {
               console.warn("Failed to download from URL:", err);
+              networkErrorCount++;
             }
+          } else {
+            missingLinkCount++;
           }
         }
 
@@ -175,7 +188,15 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
       }
 
       if (Object.keys(outputZip.files).length === 0) {
-        throw new Error("All download links failed. Your Snapchat links have expired (they only last 7 days). Please request a new export from Snapchat, or upload your uncompressed Snapchat data folder instead.");
+        if (networkErrorCount > 0) {
+          throw new Error("Network connection or CORS restriction blocked the downloads. Please check your internet connection or ensure you are running the latest version of the app.");
+        } else if (http403Count > 0) {
+          throw new Error("The Snapchat download links have expired (Snapchat links expire exactly 7 days after the export is created). Please request and download a new data export from Snapchat to retrieve them.");
+        } else if (missingLinkCount === itemsToExport.length) {
+          throw new Error("No download links found in the uploaded file. Please make sure you checked 'Export your Memories' when requesting your Snapchat data.");
+        } else {
+          throw new Error("All download attempts failed. The Snapchat media servers might be temporarily down, or the links are invalid. Please request a new export from Snapchat.");
+        }
       }
 
       setStatusText("Finalizing ZIP archive compression...");
