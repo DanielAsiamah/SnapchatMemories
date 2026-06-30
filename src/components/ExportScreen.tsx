@@ -35,6 +35,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
   const [exportFolder, setExportFolder] = useState('C:\\Users\\Daniel\\Documents\\SnapVault\\Memories');
   const [errorMsg, setErrorMsg] = useState('');
   const [skippedCount, setSkippedCount] = useState(0);
+  const [downloadedCount, setDownloadedCount] = useState(0);
+  const [processedPreviews, setProcessedPreviews] = useState<{ index: number; status: 'success' | 'failed'; reason?: string; thumbUrl?: string; type: string }[]>([]);
   
   const allItems = [...photos, ...videos, ...stories];
   const limitCount = isPremium ? allItems.length : Math.min(allItems.length, 50);
@@ -52,6 +54,8 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
     setProgress(0);
     setErrorMsg('');
     setSkippedCount(0);
+    setDownloadedCount(0);
+    setProcessedPreviews([]);
 
     const injectExif = async (blob: Blob, dateObj: Date): Promise<string> => {
       return new Promise((resolve) => {
@@ -113,6 +117,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         }
 
         let fileProcessed = false;
+        let itemError = 'missing URL';
         
         // Strategy 1: Check if they uploaded the full ZIP containing the media folder
         if (rawZip) {
@@ -127,8 +132,22 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
             if (extension === 'jpg') {
               const base64Data = await injectExif(blob, dateObj);
               outputZip.file(finalPath, base64Data, { base64: true });
+              const thumb = URL.createObjectURL(blob);
+              setDownloadedCount(prev => prev + 1);
+              setProcessedPreviews(prev => [...prev, {
+                index: i,
+                status: 'success',
+                thumbUrl: thumb,
+                type: mediaType
+              }]);
             } else {
               outputZip.file(finalPath, blob);
+              setDownloadedCount(prev => prev + 1);
+              setProcessedPreviews(prev => [...prev, {
+                index: i,
+                status: 'success',
+                type: mediaType
+              }]);
             }
             fileProcessed = true;
           }
@@ -138,6 +157,7 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         if (!fileProcessed) {
           let downloadUrl = item["Download Link"] || item["Media Download Url"];
           if (downloadUrl) {
+            itemError = '';
             try {
               // Bypass CORS on localhost using the Vite proxy we just set up
               if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -154,24 +174,39 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                 if (extension === 'jpg') {
                   const base64Data = await injectExif(blob, dateObj);
                   outputZip.file(finalPath, base64Data, { base64: true });
-                  setCurrentThumb(URL.createObjectURL(blob));
+                  const thumb = URL.createObjectURL(blob);
+                  setCurrentThumb(thumb);
+                  setDownloadedCount(prev => prev + 1);
+                  setProcessedPreviews(prev => [...prev, {
+                    index: i,
+                    status: 'success',
+                    thumbUrl: thumb,
+                    type: mediaType
+                  }]);
                 } else {
                   outputZip.file(finalPath, blob);
-                  // Use a generic video placeholder
-                  setCurrentThumb('https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=200&auto=format&fit=crop'); 
+                  setDownloadedCount(prev => prev + 1);
+                  setProcessedPreviews(prev => [...prev, {
+                    index: i,
+                    status: 'success',
+                    type: mediaType
+                  }]);
                 }
                 fileProcessed = true;
               } else {
                 console.warn(`Cloud download failed with status: ${response.status}`);
                 if (response.status === 403) {
                   http403Count++;
+                  itemError = 'expired link';
                 } else {
                   otherHttpErrorCount++;
+                  itemError = `HTTP error ${response.status}`;
                 }
               }
             } catch (err) {
               console.warn("Failed to download from URL:", err);
               networkErrorCount++;
+              itemError = 'network error';
             }
           } else {
             missingLinkCount++;
@@ -181,6 +216,12 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
         // Strategy 3: Clean Fallback
         if (!fileProcessed) {
           setSkippedCount(prev => prev + 1);
+          setProcessedPreviews(prev => [...prev, {
+            index: i,
+            status: 'failed',
+            reason: itemError || 'unsupported file',
+            type: mediaType
+          }]);
         }
 
         setProgress(Math.round(((i + 1) / itemsToExport.length) * 100));
@@ -318,16 +359,16 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
           <div className="setup-header-banner">
             <div className="setup-header-text">
               <h2>Saving Memories</h2>
-              <p>Writing organized files to target path...</p>
+              <p>Downloaded {downloadedCount} / {limitCount} memories</p>
             </div>
             <span style={{ fontSize: '24px' }}>⏳</span>
           </div>
 
           <div className="setup-body-panel">
-            <div className="exporter-progress-area" style={{ maxWidth: '440px', margin: '0 auto', width: '100%', textAlign: 'left' }}>
+            <div className="exporter-progress-area" style={{ maxWidth: '600px', margin: '0 auto', width: '100%', textAlign: 'left' }}>
               <div className="setup-progress-container">
                 <div className="setup-progress-label">
-                  <span>Exporting files</span>
+                  <span>Found {limitCount} memories. Downloading...</span>
                   <span>{progress}%</span>
                 </div>
                 <div className="setup-progress-bar-outer">
@@ -335,20 +376,79 @@ export const ExportScreen: React.FC<ExportScreenProps> = ({
                 </div>
               </div>
               
-              <div className="export-status-log-text">
+              <div className="export-status-log-text" style={{ marginBottom: '16px' }}>
                 <p>Status: {statusText}</p>
               </div>
 
-              {currentThumb && (
-                <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                  <img 
-                    src={currentThumb} 
-                    alt="processing preview" 
-                    style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e0e0e0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
-                  />
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: '8px' }}>Processing Image...</p>
-                </div>
-              )}
+              {/* Live Preview Grid */}
+              <div className="preview-grid-container animate-fade-in" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', 
+                gap: '8px', 
+                maxHeight: '260px', 
+                overflowY: 'auto', 
+                padding: '8px', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '4px',
+                backgroundColor: '#f9f9f9',
+                marginBottom: '16px'
+              }}>
+                {processedPreviews.map((preview) => {
+                  const isSuccess = preview.status === 'success';
+                  return (
+                    <div key={preview.index} className="preview-grid-tile" style={{
+                      position: 'relative',
+                      width: '100%',
+                      paddingBottom: '100%', // 1:1 Aspect Ratio
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      backgroundColor: isSuccess ? '#e0e0e0' : '#fee2e2',
+                      border: isSuccess ? '1px solid #ccc' : '1px solid #fca5a5'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {isSuccess ? (
+                          preview.thumbUrl ? (
+                            <img src={preview.thumbUrl} alt="memory preview" style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }} />
+                          ) : (
+                            // Video Icon
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#555' }}>
+                              <span style={{ fontSize: '20px' }}>🎥</span>
+                              <span style={{ fontSize: '9px', fontWeight: 600, marginTop: '2px' }}>VIDEO</span>
+                            </div>
+                          )
+                        ) : (
+                          // Failed tile
+                          <div style={{ textAlign: 'center', padding: '4px', color: '#991b1b' }}>
+                            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>✕</span>
+                            <span style={{ 
+                              display: 'block', 
+                              fontSize: '8px', 
+                              fontWeight: 600, 
+                              textTransform: 'uppercase', 
+                              marginTop: '2px',
+                              lineHeight: '1',
+                              wordBreak: 'break-word'
+                            }}>
+                              {preview.reason}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
