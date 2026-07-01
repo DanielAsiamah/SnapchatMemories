@@ -1,0 +1,68 @@
+
+=====================================
+Snapchat Memories Downloader v2
+=====================================
+Contact: supr3ltd@gmail.com
+=====================================
+
+WELCOME!
+This app lets you download/export your Snapchat memories, organize them by date, and preserve metadata!
+
+=====================================
+QUICK START GUIDE
+=====================================
+
+Step 1: Get Your Firebase Service Account Key
+1. Go to https://console.firebase.google.com/
+2. Select project "snapvault-2cfe0"
+3. Click ⚙️ (Settings) → "Service accounts"
+4. Click "Generate new private key"
+5. Save the file as "serviceAccountKey.json"
+6. Put this file in the SAME folder as SnapchatMemoriesDownloader.exe
+
+Step 2: Set Up the .env File
+1. Rename the file ".env.example" to ".env"
+2. (Optional) Open ".env" and modify settings if needed
+   (Default settings work for most users!)
+
+Step 3: Run the App!
+1. Double-click "SnapchatMemoriesDownloader.exe"
+2. Create an account or log in
+3. Choose your mode:
+   - "Download from Snapchat": Use if you have a JSON with working download links
+   - "Process Local Files": Use if you have the actual media files in a "memories/" folder (most common!)
+4. Select your files/folders
+5. Click "Start Download" or "Process Local Files"
+
+Step 4: Go Premium (Optional)!
+- Free users: Up to 200 memories
+- Premium (£2.99): Unlimited memories, automatic updates, priority support
+- Click "Upgrade to Premium" in the app to purchase!
+
+=====================================
+TROUBLESHOOTING
+=====================================
+
+Q: It says "No download URL found, skipping"!
+A: Snapchat often doesn't include working download links in new exports—use "Process Local Files" mode instead!
+
+Q: Where are my memories saved?
+A: By default, they're saved to a folder named "downloads" in the same folder as the app! You can change this in the app!
+
+Q: I paid for Premium but it's not working!
+A: Wait 2-3 minutes, then restart the app—your status will update automatically! If not, email us at supr3ltd@gmail.com!
+
+Q: The app won't open!
+A: Make sure "serviceAccountKey.json" is in the same folder! If you still have issues, email us!
+
+=====================================
+GITHUB (TRANSPARENCY!)
+=====================================
+This app is 100% open-source! Check the code here to see exactly what it does (no spyware, no surprises!):
+https://github.com/DanielAsiamah/SnapchatMemories/tree/v2
+
+=====================================
+SUPPORT
+=====================================
+Questions? Problems? Feature requests?
+Email us anytime: supr3ltd@gmail.com

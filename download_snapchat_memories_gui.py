@@ -63,12 +63,17 @@ except (ImportError, FileNotFoundError, OSError):
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging (use user's app data folder to avoid permission issues)
+import os
+log_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "SnapVault")
+os.makedirs(log_dir, exist_ok=True)
+log_path = os.path.join(log_dir, "debug.log")
+
 logging.basicConfig(
     level=logging.DEBUG,  # Set to DEBUG for verbose logging
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("debug.log"),  # Log to a file
+        logging.FileHandler(log_path),  # Log to a file in user's folder
         logging.StreamHandler()  # Log to console
     ]
 )
@@ -1070,6 +1075,12 @@ class SnapchatDownloaderGUI:
                                    text="Download your Snapchat memories with metadata preservation", 
                                    style="Subtitle.TLabel")
         self.subtitle_label.pack(anchor=tk.W, pady=(5, 0))
+        
+        # Contact email
+        contact_label = ttk.Label(header_card, 
+                                   text="Contact: supr3ltd@gmail.com", 
+                                   style="Info.TLabel")
+        contact_label.pack(anchor=tk.W, pady=(5, 0))
         
         # Login/Signup buttons
         btn_frame = ttk.Frame(header_card, style="Card.TFrame")
@@ -2522,16 +2533,15 @@ class SnapchatDownloaderGUI:
             self.log("=" * 50)
             
             if not self.stop_download:
+                # Show completion message and ask to open folder
                 if self.skip_existing.get():
-                    messagebox.showinfo("Complete", 
-                                       f"Downloaded {downloaded_count} files\n"
-                                       f"Skipped {skipped_count} existing files\n"
-                                       f"Failed {error_count} files\n"
-                                       f"Output: {output_dir}")
+                    msg = f"Downloaded {downloaded_count} files\nSkipped {skipped_count} existing files\nFailed {error_count} files\nOutput: {output_dir}"
                 else:
-                    messagebox.showinfo("Complete", 
-                                       f"Downloaded {success_count} of {total} files\n"
-                                       f"Output: {output_dir}")
+                    msg = f"Downloaded {success_count} of {total} files\nOutput: {output_dir}"
+                
+                result = messagebox.askyesno("Processing Complete!", f"{msg}\n\nWould you like to open the output folder now?")
+                if result:
+                    self.open_output_dir()
             
         except Exception as e:
             self.log(f"\n✗ Error: {str(e)}")
