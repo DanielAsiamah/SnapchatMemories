@@ -15,5 +15,8 @@ tzlocal>=4.0.0
 firebase-admin
 python-dotenv
 
+# Build/Deployment
+pyinstaller>=6.0.0
+
 # Development/Testing (optional - only needed to run tests)
 pytest>=7.0.0

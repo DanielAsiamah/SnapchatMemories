@@ -842,22 +842,21 @@ class SnapchatDownloaderGUI:
         except Exception:
             pass
 
-        # Trae Version Yellow/Black Theme Palette
-        bg_color = "#0a0a0c"        # app background (trae's bg-body)
-        card_bg = "#070709"         # card background (trae's bg-window)
-        primary_color = "#FFFC00"   # Snapchat Yellow (trae's accent-primary)
-        accent_color = "#e5e300"    # Hover yellow (trae's accent-primary-hover)
+        # Modern palette
+        bg_color = "#f4f7fb"        # app background
+        card_bg = "#ffffff"
+        primary_color = "#2168f3"  # primary blue
+        accent_color = "#7c5cff"   # accent
         success_color = "#00b894"
-        text_color = "#ffffff"      # White text
-        muted_color = "#a1a1aa"     # Secondary text (trae's text-secondary)
+        text_color = "#2b3440"
+        muted_color = "#6c757d"
 
         # Apply root background
         self.root.configure(bg=bg_color)
 
         # Card and main frame styles
         style.configure("Main.TFrame", background=bg_color)
-        style.configure("Card.TFrame", background=card_bg, relief="flat", borderwidth=1,
-                        bordercolor="rgba(255,255,255,0.08)")
+        style.configure("Card.TFrame", background=card_bg, relief="flat", borderwidth=1)
 
         # Label styles
         style.configure("Title.TLabel", background=card_bg, foreground=text_color,
@@ -871,40 +870,35 @@ class SnapchatDownloaderGUI:
         style.configure("Status.TLabel", background=card_bg, foreground=text_color,
                         font=("Segoe UI", 9))
 
-        # Button styles (Snapchat Yellow)
+        # Button styles
         style.configure("Primary.TButton", font=("Segoe UI", 10, "bold"),
-                        padding=(12, 8), foreground="#000000", background=primary_color)
+                        padding=(12, 8), foreground="white", background=primary_color)
         style.map("Primary.TButton",
-                  background=[("active", accent_color), ("!active", primary_color), ("disabled", "#333333")],
-                  foreground=[("disabled", "#666666")])
+                  background=[("active", accent_color), ("!active", primary_color), ("disabled", "#cbd5e1")],
+                  foreground=[("disabled", "#f1f5f9")])
 
         style.configure("Secondary.TButton", font=("Segoe UI", 9), padding=(8, 6),
-                        foreground=primary_color, background=card_bg, borderwidth=1,
-                        bordercolor="rgba(255,255,255,0.1)")
-        style.map("Secondary.TButton",
-                  background=[("active", "rgba(255,255,255,0.05)"), ("!active", card_bg)])
+                        foreground=primary_color, background=card_bg)
 
         style.configure("Stop.TButton", font=("Segoe UI", 9, "bold"), padding=(8, 6),
                         foreground="white", background="#e74c3c")
         style.map("Stop.TButton",
-                  background=[("active", "#c0392b"), ("!active", "#e74c3c"), ("disabled", "#333333")],
-                  foreground=[("disabled", "#666666")])
+                  background=[("active", "#c0392b"), ("!active", "#e74c3c"), ("disabled", "#f1f5f9")],
+                  foreground=[("disabled", "#f1f5f9")])
 
-        # Progressbar style: Yellow gradient
-        style.configure("Custom.Horizontal.TProgressbar", troughcolor="#1a1a1e",
-                        background=primary_color, thickness=14)
+        # Progressbar style: slimmer and colored
+        style.configure("Custom.Horizontal.TProgressbar", troughcolor=card_bg,
+                        background=success_color, thickness=14)
 
         # Checkbutton style: match card background
         style.configure("Card.TCheckbutton", background=card_bg, foreground=text_color,
                         font=("Segoe UI", 9))
         style.map("Card.TCheckbutton", background=[("active", card_bg)])
-        style.configure("Card.TCheckbutton", indicatorbackground="#1a1a1e", indicatorcolor=primary_color)
 
         # Radiobutton style (matches card background)
         style.configure("Card.TRadiobutton", background=card_bg, foreground=text_color,
                         font=("Segoe UI", 9))
         style.map("Card.TRadiobutton", background=[("active", card_bg)])
-        style.configure("Card.TRadiobutton", indicatorbackground="#1a1a1e", indicatorcolor=primary_color)
 
         # Small helper used across widgets for consistent padding
         self._card_padding = 16
@@ -1017,6 +1011,12 @@ class SnapchatDownloaderGUI:
         if not stripe_url or stripe_url == "https://buy.stripe.com/test_...":
             messagebox.showinfo("Premium Upgrade", "Please set STRIPE_PREMIUM_CHECKOUT_URL in your .env file")
             return
+        
+        # Append user ID as client_reference_id so Stripe webhook knows who to upgrade
+        if self.user_id:
+            # Add query parameter to Stripe URL (works with Payment Links)
+            separator = "&" if "?" in stripe_url else "?"
+            stripe_url = f"{stripe_url}{separator}client_reference_id={self.user_id}"
         
         webbrowser.open(stripe_url)
         messagebox.showinfo("Premium Upgrade", "Please complete the payment in your browser. After payment, your premium status will be updated automatically!")
@@ -1474,9 +1474,8 @@ class SnapchatDownloaderGUI:
         
         # Allow the log area to resize with the window by not forcing a fixed height
         self.log_text = tk.Text(log_frame, wrap=tk.WORD,
-                       font=("Consolas", 9), bg="#070709",
-                       fg="#ffffff", relief=tk.FLAT,
-                       insertbackground="#FFFC00",
+                       font=("Consolas", 9), bg="#f8f9fa",
+                       fg="#2f3542", relief=tk.FLAT,
                        yscrollcommand=scrollbar.set)
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.log_text.yview)
