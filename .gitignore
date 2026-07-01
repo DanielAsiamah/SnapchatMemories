@@ -1,0 +1,17 @@
+﻿.env
+serviceAccountKey.json
+*.json
+!package.json
+!package-lock.json
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+downloads/
+debug.log
